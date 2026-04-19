@@ -1,5 +1,4 @@
 package com.nust.attendance.model;
-
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.List;
@@ -28,12 +27,10 @@ public class Session {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
-
     @OneToMany(mappedBy = "session", cascade = CascadeType.ALL)
     private List<AttendanceRecord> records;
 
     public Session() {}
-
     public static Builder builder() { return new Builder(); }
     public static class Builder {
         private Long sessionId; private Module module; private LocalDate sessionDate;
