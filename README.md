@@ -5,7 +5,7 @@
 
 ---
 
-## 👥 Group Members
+##  Group Members
 
 | Name | Student Number |
 |------|---------------|
@@ -18,21 +18,21 @@
 
 ---
 
-## 📋 Project Overview
+##  Project Overview
 
 A web-based attendance tracking system to replace NUST's manual paper-based attendance process. The system allows lecturers to mark student attendance digitally, students to view their own records, and administrators to manage users and generate reports.
 
 ### Key Features
-- 🔐 Role-based authentication (Student / Lecturer / Admin)
-- ✅ Digital attendance marking per session
-- 📊 Attendance reports with PDF/Excel export
-- ⚠️ Automatic low-attendance alerts (below 80%)
-- 📷 QR code-based student self check-in
-- 📋 Admin audit log
+-  Role-based authentication (Student / Lecturer / Admin)
+-  Digital attendance marking per session
+-  Attendance reports with PDF/Excel export
+-  Automatic low-attendance alerts (below 80%)
+-  QR code-based student self check-in
+-  Admin audit log
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -46,7 +46,7 @@ A web-based attendance tracking system to replace NUST's manual paper-based atte
 
 ---
 
-## 🗂️ Project Structure
+##  Project Structure
 
 ```
 nust-attendance-tracker/
@@ -79,7 +79,7 @@ nust-attendance-tracker/
 
 ---
 
-## ⚙️ Setup & Running Locally
+##  Setup & Running Locally
 
 ### Prerequisites
 - Java 17+
@@ -122,29 +122,29 @@ App runs at: `http://localhost:8080`
 
 ---
 
-## 🧪 Running Tests
+##  Running Tests
 ```bash
 mvn test
 ```
 
 ---
 
-## 📅 Submission Schedule
+##  Submission Schedule
 
 | Deliverable | Due Date | Status |
 |-------------|----------|--------|
-| Project Proposal | 29 Mar 2026 | ✅ Done |
-| Process Model & Justification | 29 Mar 2026 | ✅ Done |
-| Requirements Specification (SRS) | 5 Apr 2026 | ✅ Done |
-| System Design | 5 Apr 2026 | ✅ Done |
-| Prototype / Wireframes | 5 Apr 2026 | ✅ Done |
-| Implementation | 19 Apr 2026 | 🔄 In Progress |
-| Testing | 19 Apr 2026 | ⏳ Pending |
-| Final Presentation & Demo | 26 Apr 2026 | ⏳ Pending |
+| Project Proposal | 29 Mar 2026 |  Done |
+| Process Model & Justification | 29 Mar 2026 |  Done |
+| Requirements Specification (SRS) | 5 Apr 2026 |  Done |
+| System Design | 5 Apr 2026 |  Done |
+| Prototype / Wireframes | 5 Apr 2026 |  Done |
+| Implementation | 19 Apr 2026 |  In Progress |
+| Testing | 19 Apr 2026 |  Pending |
+| Final Presentation & Demo | 26 Apr 2026 |  Pending |
 
 ---
 
-## 🔄 Process Model
+##  Process Model
 This project follows **Agile Scrum** with 4 sprints. See `docs/` for the full process artefacts.
 
 ---
