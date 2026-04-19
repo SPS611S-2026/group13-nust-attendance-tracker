@@ -49,6 +49,14 @@ public class AttendanceService {
         this.notificationService = notificationService;
     }
 
+/**
+ * Submits attendance for a given session.
+ * Iterates through the attendance map and records each student's status.
+ * Also checks attendance thresholds and sends alerts if necessary.
+ *
+ * @param request contains session ID and student attendance statuses
+ */
+
     @Transactional
     public void submitAttendance(AttendanceSubmitRequest request) {
         Session session = sessionRepo.findById(request.getSessionId())
@@ -78,6 +86,15 @@ public class AttendanceService {
             checkAndSendAlert(enrollment.getStudent(), session.getModule());
         }
     }
+
+/**
+ * Processes QR code check-in for a student.
+ * Validates session, ensures the student is enrolled,
+ * and prevents duplicate check-ins.
+ *
+ * @param token QR code token for the session
+ * @return confirmation message after successful check-in
+ */
 
     @Transactional
     public String processQrCheckIn(String token) {
