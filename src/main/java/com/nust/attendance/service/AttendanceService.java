@@ -3,7 +3,6 @@ package com.nust.attendance.service;
 import com.nust.attendance.dto.AttendanceDetailDTO;
 import com.nust.attendance.dto.AttendanceSummaryDTO;
 import com.nust.attendance.dto.AttendanceSubmitRequest;
-import com.nust.attendance.dto.CreateSessionRequest;
 import com.nust.attendance.dto.ModuleAttendanceDTO;
 import com.nust.attendance.dto.SessionDTO;
 import com.nust.attendance.dto.StudentReportDTO;

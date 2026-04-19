@@ -14,14 +14,14 @@ import java.util.stream.Collectors;
 public class ModuleService {
 
     private final ModuleRepository moduleRepo;
-    private final UserRepository userRepo;
+    
     private final EnrollmentRepository enrollmentRepo;
     private final SessionRepository sessionRepo;
 
     public ModuleService(ModuleRepository moduleRepo, UserRepository userRepo,
                          EnrollmentRepository enrollmentRepo, SessionRepository sessionRepo) {
         this.moduleRepo = moduleRepo;
-        this.userRepo = userRepo;
+        
         this.enrollmentRepo = enrollmentRepo;
         this.sessionRepo = sessionRepo;
     }
