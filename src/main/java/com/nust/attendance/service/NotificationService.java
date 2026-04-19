@@ -48,7 +48,7 @@ public class NotificationService {
     }
 
     public long countUnread(Long userId) {
-        return notificationRepo.countByRecipient_UserIdAndIsReadFalse(userId);
+        return notificationRepo.countByRecipient_UserIdAndReadFalse(userId);
     }
 
     public void markAllRead(Long userId) {
