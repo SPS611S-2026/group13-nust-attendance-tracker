@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lecturer Dashboard — NUST Attendance</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="navbar-brand">NUST<span>.</span> Attendance</span>
+  <button class="nav-link active" onclick="showView('dashboard')">Dashboard</button>
+  <button class="nav-link" onclick="showView('mark')">Mark Attendance</button>
+  <button class="nav-link" onclick="showView('report')">Reports</button>
+  <button class="nav-link" onclick="logout()">Logout</button>
+</nav>
+
+<div class="page">
+
+  <!-- ── Dashboard View ── -->
+  <div id="view-dashboard">
+    <div class="page-header">
+      <h1 id="greeting">Lecturer Dashboard</h1>
+      <p id="subheading"></p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="val" id="statModules">–</div><div class="lbl">My Modules</div></div>
+      <div class="stat-card"><div class="val" id="statStudents">–</div><div class="lbl">Total Students</div></div>
+      <div class="stat-card"><div class="val" id="statSessions">–</div><div class="lbl">Total Sessions</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        My Modules
+        <button class="btn btn-green btn-sm" onclick="showView('mark')">+ New Session</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Code</th><th>Module Name</th><th>Students</th><th>Sessions</th><th>Actions</th></tr></thead>
+          <tbody id="modulesBody"><tr><td colspan="5" class="loader">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Mark Attendance View ── -->
+  <div id="view-mark" style="display:none">
+    <div class="page-header" style="display:flex;align-items:center;gap:14px">
+      <button class="btn btn-outline btn-sm" onclick="showView('dashboard')">← Back</button>
+      <div><h1>Mark Attendance</h1><p>Select a module and session, then mark students.</p></div>
+    </div>
+
+    <!-- Session selector card -->
+    <div class="card">
+      <div class="card-header">Session Setup</div>
+      <div class="card-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Module</label>
+            <select id="markModule" class="form-control" onchange="loadSessionsForModule()">
+              <option value="">— Select module —</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Session Date</label>
+            <input type="date" id="markDate" class="form-control">
+          </div>
+          <div class="form-group">
+            <label>Session Name</label>
+            <input type="text" id="markSessionName" class="form-control" placeholder="e.g. Lecture 7">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:4px;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="createOrSelectSession()">Load / Create Session</button>
+          <button class="btn btn-outline" id="qrBtn" style="display:none" onclick="showQR()">Show QR Code</button>
+          <button class="btn btn-green btn-sm" id="markAllBtn" style="display:none" onclick="markAll('P')">✓ Mark All Present</button>
+          <button class="btn btn-outline btn-sm" id="clearAllBtn" style="display:none" onclick="markAll('A')">✗ Mark All Absent</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- QR Display -->
+    <div id="qrCard" class="card" style="display:none">
+      <div class="card-header">QR Code — Students scan to check in</div>
+      <div class="card-body qr-box">
+        <img id="qrImg" src="" alt="QR Code">
+        <p class="qr-url" id="qrUrl"></p>
+        <p style="font-size:12px;color:var(--text-muted);margin-top:8px">Valid today only. Students scan with their phone.</p>
+      </div>
+    </div>
+
+    <!-- Student list card -->
+    <div id="studentListCard" class="card" style="display:none">
+      <div class="card-header" id="studentListTitle">Student List</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Student Name</th><th>Student No.</th><th>Attendance</th></tr></thead>
+          <tbody id="studentListBody"></tbody>
+        </table>
+      </div>
+      <div style="padding:14px">
+        <button class="btn btn-green" onclick="submitAttendance()" id="submitBtn">Submit Attendance</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Report View ── -->
+  <div id="view-report" style="display:none">
+    <div class="page-header" style="display:flex;align-items:center;gap:14px">
+      <button class="btn btn-outline btn-sm" onclick="showView('dashboard')">← Back</button>
+      <div><h1>Attendance Report</h1><p>View and export module attendance data.</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>Module</label>
+            <select id="reportModule" class="form-control">
+              <option value="">— Select module —</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" onclick="loadReport()">Generate Report</button>
+          <button class="btn btn-outline" onclick="exportExcel()">Export Excel</button>
+          <button class="btn btn-outline" onclick="exportCsv()">Export CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="reportSummary" class="stat-grid" style="display:none">
+      <div class="stat-card"><div class="val" id="rStudents">–</div><div class="lbl">Students</div></div>
+      <div class="stat-card"><div class="val" id="rSessions">–</div><div class="lbl">Total Sessions</div></div>
+      <div class="stat-card ok"><div class="val" id="rAvg">–</div><div class="lbl">Avg Attendance</div></div>
+      <div class="stat-card warn"><div class="val" id="rBelow">–</div><div class="lbl">Below 80%</div></div>
+    </div>
+
+    <div id="reportCard" class="card" style="display:none">
+      <div class="card-header">Student Attendance Report</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Student Name</th><th>Student No.</th><th>Sessions</th><th>Present</th><th>Absent</th><th>Att. %</th><th>Status</th></tr></thead>
+          <tbody id="reportBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- QR Modal -->
+<div id="qrModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">QR Code Check-In <button onclick="document.getElementById('qrModal').classList.remove('open')" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button></div>
+    <div class="modal-body qr-box">
+      <img id="qrModalImg" src="" alt="QR Code" style="max-width:220px">
+      <p class="qr-url" id="qrModalUrl" style="margin-top:10px"></p>
+      <p style="font-size:12px;color:var(--text-muted);margin-top:6px">Students scan with their phones to register attendance.</p>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  /* global QR generation via free API */
+  const QR_API = token => `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(window.location.origin + '/student.html?qr=' + token)}`;
+
+  API.requireAuth(['LECTURER']);
+  const user = API.getUser();
+  let myModules = [];
+  let currentSession = null;
+  let enrolledStudents = [];
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('greeting').textContent = `Welcome, ${user.fullName} 👋`;
+    document.getElementById('subheading').textContent = `Staff No: ${user.studentNumber}  ·  ${new Date().toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
+    document.getElementById('markDate').value = new Date().toISOString().split('T')[0];
+    await loadModules();
+  });
+
+  function showView(name) {
+    ['dashboard','mark','report'].forEach(v =>
+      document.getElementById('view-' + v).style.display = v === name ? '' : 'none');
+    document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+    const idx = {dashboard:0,mark:1,report:2}[name];
+    document.querySelectorAll('.nav-link')[idx]?.classList.add('active');
+  }
+
+  async function loadModules() {
+    try {
+      myModules = await API.get(`/api/modules/lecturer/${user.userId}`);
+      renderDashboard();
+      populateModuleSelects();
+    } catch(e) {
+      document.getElementById('modulesBody').innerHTML =
+        `<tr><td colspan="5" style="color:var(--red);padding:16px">${e.message}</td></tr>`;
+    }
+  }
+
+  function renderDashboard() {
+    document.getElementById('statModules').textContent  = myModules.length;
+    document.getElementById('statStudents').textContent = myModules.reduce((s,m) => s + m.studentCount, 0);
+    document.getElementById('statSessions').textContent = myModules.reduce((s,m) => s + m.sessionCount, 0);
+
+    document.getElementById('modulesBody').innerHTML = myModules.map(m => `
+      <tr>
+        <td><strong>${m.moduleCode}</strong></td>
+        <td>${m.moduleName}</td>
+        <td>${m.studentCount}</td>
+        <td>${m.sessionCount}</td>
+        <td style="display:flex;gap:6px;padding:6px 12px">
+          <button class="btn btn-green btn-sm" onclick="goMark(${m.moduleId})">Mark</button>
+          <button class="btn btn-primary btn-sm" onclick="goReport(${m.moduleId})">Report</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function populateModuleSelects() {
+    ['markModule','reportModule'].forEach(id => {
+      const sel = document.getElementById(id);
+      const cur = sel.value;
+      sel.innerHTML = '<option value="">— Select module —</option>' +
+        myModules.map(m => `<option value="${m.moduleId}">${m.moduleCode} — ${m.moduleName}</option>`).join('');
+      if (cur) sel.value = cur;
+    });
+  }
+
+  function goMark(moduleId) {
+    showView('mark');
+    document.getElementById('markModule').value = moduleId;
+  }
+
+  function goReport(moduleId) {
+    showView('report');
+    document.getElementById('reportModule').value = moduleId;
+    loadReport();
+  }
+
+  // ── Mark Attendance ────────────────────────────────────────────────────────
+  async function createOrSelectSession() {
+    const moduleId   = document.getElementById('markModule').value;
+    const date       = document.getElementById('markDate').value;
+    const sessionName = document.getElementById('markSessionName').value.trim() || `Lecture ${new Date(date).toLocaleDateString()}`;
+
+    if (!moduleId) { alert('Please select a module.'); return; }
+    if (!date)     { alert('Please select a date.'); return; }
+
+    try {
+      // Create session (backend returns existing if same module+date, or creates new)
+      currentSession = await API.post('/api/attendance/sessions', { moduleId: +moduleId, sessionName, sessionDate: date });
+
+      // Load enrolled students
+      const report = await API.get(`/api/attendance/module/${moduleId}/report`);
+      enrolledStudents = report;
+
+      renderStudentList();
+      document.getElementById('studentListCard').style.display = '';
+      document.getElementById('qrBtn').style.display = '';
+      document.getElementById('markAllBtn').style.display = '';
+      document.getElementById('clearAllBtn').style.display = '';
+
+      document.getElementById('studentListTitle').textContent =
+        `Student List — ${document.getElementById('markModule').selectedOptions[0].text} (${report.length} students)`;
+    } catch(e) { alert('Error: ' + e.message); }
+  }
+
+  function renderStudentList() {
+    document.getElementById('studentListBody').innerHTML = enrolledStudents.map((s, i) => `
+      <tr>
+        <td>${i + 1}</td>
+        <td>${s.fullName}</td>
+        <td>${s.studentNumber}</td>
+        <td>
+          <div class="radio-group">
+            <input type="radio" name="att_${s.studentId}" id="p_${s.studentId}" value="P" checked>
+            <label for="p_${s.studentId}" class="present">Present</label>
+            <input type="radio" name="att_${s.studentId}" id="a_${s.studentId}" value="A">
+            <label for="a_${s.studentId}" class="absent">Absent</label>
+          </div>
+        </td>
+      </tr>`).join('');
+  }
+
+  function markAll(status) {
+    enrolledStudents.forEach(s => {
+      const radio = document.querySelector(`input[name="att_${s.studentId}"][value="${status}"]`);
+      if (radio) radio.checked = true;
+    });
+  }
+
+  async function submitAttendance() {
+    if (!currentSession) { alert('No session loaded.'); return; }
+    const attendanceMap = {};
+    enrolledStudents.forEach(s => {
+      const checked = document.querySelector(`input[name="att_${s.studentId}"]:checked`);
+      attendanceMap[s.studentId] = checked ? checked.value : 'A';
+    });
+
+    const btn = document.getElementById('submitBtn');
+    btn.textContent = 'Submitting…';
+    btn.disabled = true;
+
+    try {
+      await API.post('/api/attendance/submit', { sessionId: currentSession.sessionId, attendanceMap });
+      alert('✅ Attendance submitted successfully!');
+      await loadModules();
+    } catch(e) {
+      alert('Error: ' + e.message);
+    } finally {
+      btn.textContent = 'Submit Attendance';
+      btn.disabled = false;
+    }
+  }
+
+  function showQR() {
+    if (!currentSession) return;
+    const url = window.location.origin + '/student.html?qr=' + currentSession.qrCodeToken;
+    document.getElementById('qrModalImg').src = QR_API(currentSession.qrCodeToken);
+    document.getElementById('qrModalUrl').textContent = url;
+    document.getElementById('qrModal').classList.add('open');
+  }
+
+  // ── Report ─────────────────────────────────────────────────────────────────
+  async function loadReport() {
+    const moduleId = document.getElementById('reportModule').value;
+    if (!moduleId) { alert('Please select a module.'); return; }
+
+    document.getElementById('reportCard').style.display = '';
+    document.getElementById('reportSummary').style.display = 'grid';
+    document.getElementById('reportBody').innerHTML = '<tr><td colspan="7" class="loader">Loading…</td></tr>';
+
+    try {
+      const rows = await API.get(`/api/attendance/module/${moduleId}/report`);
+      const below = rows.filter(r => r.belowThreshold).length;
+      const avg   = rows.length ? (rows.reduce((s,r) => s + r.attendancePercentage, 0) / rows.length).toFixed(1) : 0;
+
+      document.getElementById('rStudents').textContent = rows.length;
+      document.getElementById('rSessions').textContent = rows[0]?.totalSessions || 0;
+      document.getElementById('rAvg').textContent      = avg + '%';
+      document.getElementById('rBelow').textContent    = below;
+
+      document.getElementById('reportBody').innerHTML = rows.map(r => `
+        <tr>
+          <td>${r.fullName}</td>
+          <td>${r.studentNumber}</td>
+          <td>${r.totalSessions}</td>
+          <td>${r.sessionsAttended}</td>
+          <td>${r.sessionsAbsent}</td>
+          <td><strong style="color:${r.belowThreshold?'var(--red)':'var(--green)'}">${r.attendancePercentage}%</strong></td>
+          <td><span class="badge ${r.belowThreshold?'badge-warn':'badge-ok'}">${r.belowThreshold?'⚠ Below 80%':'✓ OK'}</span></td>
+        </tr>`).join('');
+    } catch(e) {
+      document.getElementById('reportBody').innerHTML =
+        `<tr><td colspan="7" style="color:var(--red);padding:16px">${e.message}</td></tr>`;
+    }
+  }
+
+  function exportExcel() {
+    const moduleId = document.getElementById('reportModule').value;
+    if (!moduleId) { alert('Select a module first.'); return; }
+    API.download(`/api/reports/module/${moduleId}/excel`, `attendance_report.xlsx`);
+  }
+
+  function exportCsv() {
+    const moduleId = document.getElementById('reportModule').value;
+    if (!moduleId) { alert('Select a module first.'); return; }
+    API.download(`/api/reports/module/${moduleId}/csv`, `attendance_report.csv`);
+  }
+
+  function logout() { API.clearSession(); window.location.href = '/login.html'; }
+</script>
+</body>
+</html>

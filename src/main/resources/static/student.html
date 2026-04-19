@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard — NUST Attendance</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <span class="navbar-brand">NUST<span>.</span> Attendance</span>
+  <button class="nav-link active" onclick="showView('dashboard')">Dashboard</button>
+  <button class="nav-link" onclick="showView('detail')">My Attendance</button>
+  <button class="nav-link" id="notifBtn" onclick="showView('notifications')">
+    Notifications <span class="nav-badge" id="notifBadge" style="display:none">0</span>
+  </button>
+  <button class="nav-link" onclick="logout()">Logout</button>
+</nav>
+
+<div class="page">
+
+  <!-- ── Dashboard View ── -->
+  <div id="view-dashboard">
+    <div class="page-header">
+      <h1 id="greeting">Welcome back!</h1>
+      <p id="subheading">Student attendance overview</p>
+    </div>
+
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-card"><div class="val" id="statOverall">–</div><div class="lbl">Overall Avg Attendance</div></div>
+      <div class="stat-card"><div class="val" id="statModules">–</div><div class="lbl">Modules Enrolled</div></div>
+      <div class="stat-card"><div class="val" id="statPresent">–</div><div class="lbl">Total Sessions Present</div></div>
+      <div class="stat-card warn" id="alertCard" style="display:none"><div class="val" id="statAlerts">0</div><div class="lbl">Modules Below 80%</div></div>
+    </div>
+
+    <div id="globalWarn" class="alert alert-warn" style="display:none"></div>
+
+    <div class="card">
+      <div class="card-header">My Enrolled Modules</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Module Code</th>
+              <th>Module Name</th>
+              <th>Sessions</th>
+              <th>Attendance %</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="modulesBody">
+            <tr><td colspan="6" class="loader">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Attendance Detail View ── -->
+  <div id="view-detail" style="display:none">
+    <div class="page-header" style="display:flex;align-items:center;gap:14px">
+      <button class="btn btn-outline btn-sm" onclick="showView('dashboard')">← Back</button>
+      <div>
+        <h1 id="detailTitle">Attendance Detail</h1>
+        <p id="detailSub"></p>
+      </div>
+      <button class="btn btn-green btn-sm" style="margin-left:auto" onclick="downloadCsv()">Export CSV</button>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="val" id="dTotal">–</div><div class="lbl">Total Sessions</div></div>
+      <div class="stat-card ok"><div class="val" id="dPresent">–</div><div class="lbl">Present</div></div>
+      <div class="stat-card warn"><div class="val" id="dAbsent">–</div><div class="lbl">Absent</div></div>
+      <div class="stat-card" id="dPctCard"><div class="val" id="dPct">–</div><div class="lbl">Attendance %</div></div>
+    </div>
+
+    <div id="detailWarn" class="alert alert-warn" style="display:none"></div>
+
+    <div class="card">
+      <div class="card-header" id="detailCardTitle">Session History</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Date</th><th>Session</th><th>Status</th></tr>
+          </thead>
+          <tbody id="detailBody">
+            <tr><td colspan="4" class="loader">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Notifications View ── -->
+  <div id="view-notifications" style="display:none">
+    <div class="page-header" style="display:flex;align-items:center;gap:14px">
+      <button class="btn btn-outline btn-sm" onclick="showView('dashboard')">← Back</button>
+      <div><h1>Notifications</h1><p>Your alerts and messages</p></div>
+      <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="markAllRead()">Mark all read</button>
+    </div>
+    <div class="card">
+      <div class="card-body" id="notifList"><div class="loader">Loading…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- QR Check-in banner (shown when URL has ?qr=TOKEN) -->
+<div id="qrBanner" class="alert alert-ok" style="display:none;position:fixed;bottom:20px;right:20px;max-width:360px;z-index:200;"></div>
+
+<script src="/js/api.js"></script>
+<script>
+  API.requireAuth(['STUDENT']);
+  const user = API.getUser();
+  let currentModuleId = null;
+  let currentModuleCode = '';
+
+  // ── Init ──────────────────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('greeting').textContent = `Welcome back, ${user.fullName.split(' ')[0]} 👋`;
+    document.getElementById('subheading').textContent =
+      `Student No: ${user.studentNumber}  ·  ${new Date().toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
+
+    await loadDashboard();
+    await loadNotifCount();
+
+    // Handle QR check-in if URL param present
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('qr')) handleQrCheckin(params.get('qr'));
+  });
+
+  // ── Views ─────────────────────────────────────────────────────────────────
+  function showView(name) {
+    ['dashboard','detail','notifications'].forEach(v => {
+      document.getElementById('view-' + v).style.display = v === name ? '' : 'none';
+    });
+    document.querySelectorAll('.nav-link').forEach((b,i) => b.classList.remove('active'));
+    if (name === 'dashboard') document.querySelectorAll('.nav-link')[0].classList.add('active');
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+  async function loadDashboard() {
+    try {
+      const modules = await API.get(`/api/attendance/dashboard/student/${user.userId}`);
+      renderModules(modules);
+    } catch(e) {
+      document.getElementById('modulesBody').innerHTML =
+        `<tr><td colspan="6" style="color:var(--red);padding:16px">${e.message}</td></tr>`;
+    }
+  }
+
+  function renderModules(modules) {
+    const tbody = document.getElementById('modulesBody');
+    if (!modules.length) { tbody.innerHTML = '<tr><td colspan="6" class="loader">No modules found.</td></tr>'; return; }
+
+    let totalPresent = 0, totalSessions = 0, below = 0;
+    tbody.innerHTML = modules.map(m => {
+      totalPresent  += m.sessionsAttended;
+      totalSessions += m.totalSessions;
+      if (m.belowThreshold) below++;
+      const pct = m.attendancePercentage;
+      const badge = pct >= 80
+        ? `<span class="badge badge-ok">✓ Good Standing</span>`
+        : `<span class="badge badge-warn">⚠ Below 80%</span>`;
+      return `<tr style="cursor:pointer" onclick="openDetail(${m.moduleId},'${m.moduleCode}','${m.moduleName}')">
+        <td><strong>${m.moduleCode}</strong></td>
+        <td>${m.moduleName}</td>
+        <td>${m.sessionsAttended} / ${m.totalSessions}</td>
+        <td><strong style="color:${pct>=80?'var(--green)':'var(--red)'}">${pct}%</strong></td>
+        <td>${badge}</td>
+        <td><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openDetail(${m.moduleId},'${m.moduleCode}','${m.moduleName}')">View</button></td>
+      </tr>`;
+    }).join('');
+
+    const avg = totalSessions ? Math.round(totalPresent / totalSessions * 100) : 0;
+    document.getElementById('statOverall').textContent = avg + '%';
+    document.getElementById('statModules').textContent = modules.length;
+    document.getElementById('statPresent').textContent = totalPresent;
+
+    if (below > 0) {
+      document.getElementById('alertCard').style.display = '';
+      document.getElementById('statAlerts').textContent = below;
+      document.getElementById('globalWarn').style.display = '';
+      document.getElementById('globalWarn').textContent =
+        `⚠  ${below} of your module(s) are below the 80% attendance threshold. Act now to avoid academic penalties.`;
+    }
+  }
+
+  // ── Detail ────────────────────────────────────────────────────────────────
+  async function openDetail(moduleId, code, name) {
+    currentModuleId = moduleId;
+    currentModuleCode = code;
+    showView('detail');
+    document.getElementById('detailTitle').textContent = `${code} — ${name}`;
+    document.getElementById('detailSub').textContent = 'Session-by-session attendance history';
+    document.getElementById('detailCardTitle').textContent = `Session History — ${code}`;
+    document.getElementById('detailBody').innerHTML = '<tr><td colspan="4" class="loader">Loading…</td></tr>';
+
+    try {
+      const data = await API.get(`/api/attendance/student/${user.userId}/module/${moduleId}`);
+      document.getElementById('dTotal').textContent   = data.totalSessions;
+      document.getElementById('dPresent').textContent = data.totalPresent;
+      document.getElementById('dAbsent').textContent  = data.totalAbsent;
+      document.getElementById('dPct').textContent     = data.attendancePercentage + '%';
+      document.getElementById('dPctCard').className   = 'stat-card ' + (data.belowThreshold ? 'warn' : 'ok');
+
+      if (data.belowThreshold) {
+        document.getElementById('detailWarn').style.display = '';
+        document.getElementById('detailWarn').textContent =
+          `⚠  Your attendance is ${data.attendancePercentage}% — below the required 80% threshold.`;
+      } else {
+        document.getElementById('detailWarn').style.display = 'none';
+      }
+
+      if (!data.records.length) {
+        document.getElementById('detailBody').innerHTML = '<tr><td colspan="4" class="loader">No sessions recorded yet.</td></tr>';
+        return;
+      }
+
+      document.getElementById('detailBody').innerHTML = data.records.map((r, i) => {
+        const isP = r.status === 'P';
+        return `<tr>
+          <td>${i + 1}</td>
+          <td>${r.sessionDate}</td>
+          <td>${r.sessionName || '—'}</td>
+          <td><span class="badge ${isP ? 'badge-ok' : 'badge-warn'}">${isP ? 'PRESENT' : 'ABSENT'}</span></td>
+        </tr>`;
+      }).join('');
+    } catch(e) {
+      document.getElementById('detailBody').innerHTML =
+        `<tr><td colspan="4" style="color:var(--red);padding:16px">${e.message}</td></tr>`;
+    }
+  }
+
+  function downloadCsv() {
+    if (!currentModuleId) return;
+    API.download(`/api/reports/module/${currentModuleId}/csv`, `attendance_${currentModuleCode}.csv`);
+  }
+
+  // ── Notifications ─────────────────────────────────────────────────────────
+  async function loadNotifCount() {
+    try {
+      const res = await API.get(`/api/notifications/user/${user.userId}/unread-count`);
+      const count = res.count;
+      const badge = document.getElementById('notifBadge');
+      if (count > 0) { badge.textContent = count; badge.style.display = ''; }
+      else badge.style.display = 'none';
+    } catch(_) {}
+  }
+
+  async function loadNotifications() {
+    const list = document.getElementById('notifList');
+    list.innerHTML = '<div class="loader">Loading…</div>';
+    try {
+      const notifs = await API.get(`/api/notifications/user/${user.userId}`);
+      if (!notifs.length) { list.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:20px">No notifications.</p>'; return; }
+      list.innerHTML = notifs.map(n => `
+        <div style="padding:12px 0;border-bottom:1px solid var(--border);display:flex;gap:12px;align-items:flex-start">
+          <span style="font-size:18px">${n.type === 'low_attendance' ? '⚠️' : '🔔'}</span>
+          <div>
+            <p style="font-size:13px;${!n.read ? 'font-weight:600' : 'color:var(--text-sec)'}">${n.message}</p>
+            <p style="font-size:11px;color:var(--text-muted);margin-top:3px">${new Date(n.sentAt).toLocaleString()}</p>
+          </div>
+        </div>`).join('');
+    } catch(e) { list.innerHTML = `<p style="color:var(--red)">${e.message}</p>`; }
+  }
+
+  // Override showView to load notifs
+  const _origShow = showView;
+  function showView(name) {
+    ['dashboard','detail','notifications'].forEach(v =>
+      document.getElementById('view-' + v).style.display = v === name ? '' : 'none');
+    if (name === 'notifications') loadNotifications();
+  }
+
+  async function markAllRead() {
+    await API.patch(`/api/notifications/user/${user.userId}/mark-read`);
+    document.getElementById('notifBadge').style.display = 'none';
+    loadNotifications();
+  }
+
+  // ── QR Check-in ───────────────────────────────────────────────────────────
+  async function handleQrCheckin(token) {
+    try {
+      const msg = await API.get(`/api/attendance/qr-checkin/${token}`);
+      const banner = document.getElementById('qrBanner');
+      banner.textContent = '✅  ' + msg;
+      banner.style.display = 'flex';
+      setTimeout(() => banner.style.display = 'none', 6000);
+      // Clean URL
+      window.history.replaceState({}, '', '/student.html');
+      loadDashboard();
+    } catch(e) {
+      const banner = document.getElementById('qrBanner');
+      banner.className = 'alert alert-error';
+      banner.textContent = '❌  ' + e.message;
+      banner.style.display = 'flex';
+      setTimeout(() => banner.style.display = 'none', 6000);
+    }
+  }
+
+  function logout() {
+    API.clearSession();
+    window.location.href = '/login.html';
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — NUST Attendance</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<div class="login-page">
+  <!-- Left branding panel -->
+  <aside class="login-aside">
+    <div class="logo">NUST<span>.</span></div>
+    <h2>Digital Attendance<br>Tracking System</h2>
+    <p style="color:#6A88AA;font-size:12px;margin-top:24px;text-align:center;">
+      Faculty of Computing and Informatics<br>SPS611S Software Processes
+    </p>
+  </aside>
+
+  <!-- Right login form -->
+  <main class="login-main">
+    <div class="login-box">
+      <h1>Welcome back</h1>
+      <p>Sign in with your NUST student or staff number.</p>
+
+      <div id="loginError" class="alert alert-error login-error" style="margin-bottom:16px;"></div>
+
+      <div class="form-group">
+        <label for="studentNumber">Student / Staff Number</label>
+        <input type="text" id="studentNumber" class="form-control"
+               placeholder="e.g. 223023434" autocomplete="username">
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" class="form-control"
+               placeholder="••••••••" autocomplete="current-password">
+      </div>
+
+      <button id="loginBtn" class="btn btn-primary" style="width:100%;justify-content:center;margin-top:8px;">
+        Sign In
+      </button>
+
+      <p style="font-size:12px;color:var(--text-muted);margin-top:20px;text-align:center;">
+        Forgot your password? Contact
+        <a href="mailto:it-support@nust.na" style="color:var(--primary);">it-support@nust.na</a>
+      </p>
+    </div>
+  </main>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  // If already logged in, redirect
+  const user = API.getUser();
+  if (user) redirectByRole(user.role);
+
+  function redirectByRole(role) {
+    if (role === 'STUDENT')  window.location.href = '/student.html';
+    else if (role === 'LECTURER') window.location.href = '/lecturer.html';
+    else if (role === 'ADMIN')    window.location.href = '/admin.html';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('loginError');
+    el.textContent = '⚠  ' + msg;
+    el.style.display = 'flex';
+  }
+
+  document.getElementById('loginBtn').addEventListener('click', async () => {
+    const studentNumber = document.getElementById('studentNumber').value.trim();
+    const password      = document.getElementById('password').value;
+    const btn           = document.getElementById('loginBtn');
+
+    if (!studentNumber || !password) { showError('Please enter your student number and password.'); return; }
+
+    btn.textContent = 'Signing in…';
+    btn.disabled = true;
+
+    try {
+      const res = await API.post('/api/auth/login', { studentNumber, password });
+      API.setSession(res.token, { userId: res.userId, studentNumber: res.studentNumber, fullName: res.fullName, role: res.role, email: res.email });
+      redirectByRole(res.role);
+    } catch (err) {
+      showError(err.message || 'Login failed. Check your credentials.');
+      btn.textContent = 'Sign In';
+      btn.disabled = false;
+    }
+  });
+
+  // Allow Enter key to submit
+  document.getElementById('password').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('loginBtn').click();
+  });
+</script>
+</body>
+</html>

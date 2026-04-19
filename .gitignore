@@ -1,0 +1,69 @@
+# ── Maven ─────────────────────────────────────────────
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ── Spring Boot ───────────────────────────────────────
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# ── IDE — IntelliJ IDEA ───────────────────────────────
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# ── IDE — VS Code ─────────────────────────────────────
+.vscode/
+*.code-workspace
+
+# ── IDE — Eclipse ─────────────────────────────────────
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings/
+.springBeans
+.sts4-cache
+
+# ── IDE — NetBeans ────────────────────────────────────
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# ── OS ────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ── Secrets / Config (NEVER commit these) ─────────────
+application-local.properties
+application-prod.properties
+*.env
+.env
+secrets.properties
+
+# ── Logs ──────────────────────────────────────────────
+*.log
+logs/
+spring.log
+
+# ── Database ──────────────────────────────────────────
+*.db
+*.sqlite
+
+# ── Node (if any frontend tooling added later) ────────
+node_modules/
+npm-debug.log*

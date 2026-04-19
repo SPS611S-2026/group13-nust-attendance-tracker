@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — NUST Attendance</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <span class="navbar-brand">NUST<span>.</span> Attendance</span>
+  <button class="nav-link active" onclick="showView('dashboard')">Dashboard</button>
+  <button class="nav-link" onclick="showView('users')">Manage Users</button>
+  <button class="nav-link" onclick="showView('audit')">Audit Log</button>
+  <button class="nav-link" onclick="logout()">Logout</button>
+</nav>
+
+<div class="page">
+
+  <!-- ── Dashboard View ── -->
+  <div id="view-dashboard">
+    <div class="page-header">
+      <h1 id="greeting">Admin Dashboard</h1>
+      <p id="subheading"></p>
+    </div>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="val" id="statTotal">–</div><div class="lbl">Total Users</div></div>
+      <div class="stat-card"><div class="val" id="statStudents">–</div><div class="lbl">Students</div></div>
+      <div class="stat-card"><div class="val" id="statLecturers">–</div><div class="lbl">Lecturers</div></div>
+      <div class="stat-card"><div class="val" id="statAdmins">–</div><div class="lbl">Admins</div></div>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="openAddUser()">+ Add New User</button>
+      <button class="btn btn-outline" onclick="showView('users')">Manage Users</button>
+      <button class="btn btn-outline" onclick="showView('audit')">View Audit Log</button>
+    </div>
+
+    <div class="card">
+      <div class="card-header">Recent Users</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Name</th><th>Student/Staff No.</th><th>Role</th><th>Status</th></tr></thead>
+          <tbody id="recentUsersBody"><tr><td colspan="4" class="loader">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Users View ── -->
+  <div id="view-users" style="display:none">
+    <div class="page-header" style="display:flex;align-items:center;gap:14px">
+      <button class="btn btn-outline btn-sm" onclick="showView('dashboard')">← Back</button>
+      <div><h1>User Management</h1><p>View, add, edit and deactivate system users.</p></div>
+      <button class="btn btn-primary" style="margin-left:auto" onclick="openAddUser()">+ Add User</button>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>Search</label>
+            <input type="text" id="userSearch" class="form-control" placeholder="Name or student number…">
+          </div>
+          <div class="form-group">
+            <label>Role</label>
+            <select id="userRoleFilter" class="form-control">
+              <option value="">All Roles</option>
+              <option>STUDENT</option><option>LECTURER</option><option>ADMIN</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="loadUsers(0)">Search</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">All Users</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Full Name</th><th>Student/Staff No.</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="usersBody"><tr><td colspan="6" class="loader">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 18px;display:flex;justify-content:space-between;align-items:center">
+        <span id="userPageInfo" style="font-size:12px;color:var(--text-muted)"></span>
+        <div class="pagination">
+          <button class="btn btn-outline btn-sm" id="prevBtn" onclick="changePage(-1)">← Prev</button>
+          <button class="btn btn-outline btn-sm" id="nextBtn" onclick="changePage(1)">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Audit Log View ── -->
+  <div id="view-audit" style="display:none">
+    <div class="page-header" style="display:flex;align-items:center;gap:14px">
+      <button class="btn btn-outline btn-sm" onclick="showView('dashboard')">← Back</button>
+      <div><h1>Audit Log</h1><p>Timestamped record of all system events.</p></div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="filter-bar">
+          <div class="form-group">
+            <label>Filter by Action</label>
+            <input type="text" id="auditAction" class="form-control" placeholder="e.g. login, mark_attendance…">
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-primary" onclick="loadAudit(0)">Apply</button>
+          </div>
+          <div class="form-group">
+            <label>&nbsp;</label>
+            <button class="btn btn-outline" onclick="document.getElementById('auditAction').value='';loadAudit(0)">Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">System Audit Log</div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Timestamp</th><th>User</th><th>Role</th><th>Action</th><th>IP Address</th></tr></thead>
+          <tbody id="auditBody"><tr><td colspan="5" class="loader">Loading…</td></tr></tbody>
+        </table>
+      </div>
+      <div style="padding:12px 18px;display:flex;justify-content:space-between;align-items:center">
+        <span id="auditPageInfo" style="font-size:12px;color:var(--text-muted)"></span>
+        <div class="pagination">
+          <button class="btn btn-outline btn-sm" id="auditPrev" onclick="changeAuditPage(-1)">← Prev</button>
+          <button class="btn btn-outline btn-sm" id="auditNext" onclick="changeAuditPage(1)">Next →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add / Edit User Modal -->
+<div id="userModal" class="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span id="modalTitle">Add New User</span>
+      <button onclick="closeUserModal()" style="background:none;border:none;color:#fff;font-size:18px;cursor:pointer">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editUserId">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name</label>
+          <input type="text" id="mFullName" class="form-control" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label>Student/Staff Number</label>
+          <input type="text" id="mStudentNumber" class="form-control" placeholder="e.g. 224099001">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="mEmail" class="form-control" placeholder="email@nust.na">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Role</label>
+          <select id="mRole" class="form-control">
+            <option>STUDENT</option><option>LECTURER</option><option>ADMIN</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Password <span id="pwHint" style="font-weight:400;color:var(--text-muted)">(leave blank to keep)</span></label>
+          <input type="password" id="mPassword" class="form-control" placeholder="••••••••">
+        </div>
+      </div>
+      <div id="modalError" class="alert alert-error" style="display:none;margin-top:10px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeUserModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveUser()">Save User</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/api.js"></script>
+<script>
+  API.requireAuth(['ADMIN']);
+  const user = API.getUser();
+  let userPage = 0, auditPage = 0;
+  let userTotalPages = 0, auditTotalPages = 0;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    document.getElementById('greeting').textContent = `Admin Dashboard`;
+    document.getElementById('subheading').textContent =
+      `${user.fullName}  ·  ${new Date().toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
+    await loadDashboard();
+  });
+
+  function showView(name) {
+    ['dashboard','users','audit'].forEach(v =>
+      document.getElementById('view-' + v).style.display = v === name ? '' : 'none');
+    document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+    const idx = {dashboard:0,users:1,audit:2}[name];
+    document.querySelectorAll('.nav-link')[idx]?.classList.add('active');
+    if (name === 'users') loadUsers(0);
+    if (name === 'audit') loadAudit(0);
+  }
+
+  // ── Dashboard ─────────────────────────────────────────────────────────────
+  async function loadDashboard() {
+    try {
+      const data = await API.get('/api/users?size=100');
+      const users = data.content || [];
+      document.getElementById('statTotal').textContent     = data.totalElements || users.length;
+      document.getElementById('statStudents').textContent  = users.filter(u => u.roleName === 'STUDENT').length;
+      document.getElementById('statLecturers').textContent = users.filter(u => u.roleName === 'LECTURER').length;
+      document.getElementById('statAdmins').textContent    = users.filter(u => u.roleName === 'ADMIN').length;
+
+      document.getElementById('recentUsersBody').innerHTML = users.slice(0, 8).map(u => `
+        <tr>
+          <td>${u.fullName}</td>
+          <td>${u.studentNumber}</td>
+          <td><span class="badge badge-blue">${u.roleName}</span></td>
+          <td><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+        </tr>`).join('');
+    } catch(e) {
+      document.getElementById('recentUsersBody').innerHTML =
+        `<tr><td colspan="4" style="color:var(--red);padding:16px">${e.message}</td></tr>`;
+    }
+  }
+
+  // ── Users ─────────────────────────────────────────────────────────────────
+  async function loadUsers(page) {
+    userPage = page;
+    const search = document.getElementById('userSearch').value.trim();
+    const role   = document.getElementById('userRoleFilter').value;
+    let url = `/api/users?page=${page}&size=15`;
+    if (search) url += `&search=${encodeURIComponent(search)}`;
+    if (role)   url += `&role=${role}`;
+
+    document.getElementById('usersBody').innerHTML = '<tr><td colspan="6" class="loader">Loading…</td></tr>';
+
+    try {
+      const data = await API.get(url);
+      const users = data.content || [];
+      userTotalPages = data.totalPages || 1;
+
+      document.getElementById('userPageInfo').textContent =
+        `Showing ${data.numberOfElements || users.length} of ${data.totalElements || users.length} users`;
+      document.getElementById('prevBtn').disabled = page === 0;
+      document.getElementById('nextBtn').disabled = page >= userTotalPages - 1;
+
+      document.getElementById('usersBody').innerHTML = users.map(u => `
+        <tr>
+          <td>${u.fullName}</td>
+          <td>${u.studentNumber}</td>
+          <td>${u.email}</td>
+          <td><span class="badge badge-blue">${u.roleName}</span></td>
+          <td><span class="badge ${u.active ? 'badge-active' : 'badge-inactive'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+          <td style="display:flex;gap:6px;padding:6px 12px">
+            <button class="btn btn-outline btn-sm" onclick="openEditUser(${JSON.stringify(u).replace(/"/g,'&quot;')})">Edit</button>
+            <button class="btn ${u.active ? 'btn-red' : 'btn-green'} btn-sm"
+              onclick="toggleUser(${u.userId}, ${u.active})">${u.active ? 'Deactivate' : 'Activate'}</button>
+          </td>
+        </tr>`).join('');
+    } catch(e) {
+      document.getElementById('usersBody').innerHTML =
+        `<tr><td colspan="6" style="color:var(--red);padding:16px">${e.message}</td></tr>`;
+    }
+  }
+
+  function changePage(dir) {
+    const newPage = userPage + dir;
+    if (newPage >= 0 && newPage < userTotalPages) loadUsers(newPage);
+  }
+
+  async function toggleUser(userId, isActive) {
+    const action = isActive ? 'deactivate' : 'activate';
+    if (!confirm(`Are you sure you want to ${action} this user?`)) return;
+    try {
+      await API.patch(`/api/users/${userId}/${action}`);
+      loadUsers(userPage);
+      loadDashboard();
+    } catch(e) { alert('Error: ' + e.message); }
+  }
+
+  // ── User Modal ─────────────────────────────────────────────────────────────
+  function openAddUser() {
+    document.getElementById('modalTitle').textContent = 'Add New User';
+    document.getElementById('editUserId').value = '';
+    document.getElementById('mFullName').value = '';
+    document.getElementById('mStudentNumber').value = '';
+    document.getElementById('mEmail').value = '';
+    document.getElementById('mRole').value = 'STUDENT';
+    document.getElementById('mPassword').value = '';
+    document.getElementById('pwHint').style.display = 'none';
+    document.getElementById('modalError').style.display = 'none';
+    document.getElementById('userModal').classList.add('open');
+  }
+
+  function openEditUser(u) {
+    document.getElementById('modalTitle').textContent = 'Edit User';
+    document.getElementById('editUserId').value = u.userId;
+    document.getElementById('mFullName').value = u.fullName;
+    document.getElementById('mStudentNumber').value = u.studentNumber;
+    document.getElementById('mEmail').value = u.email;
+    document.getElementById('mRole').value = u.roleName;
+    document.getElementById('mPassword').value = '';
+    document.getElementById('pwHint').style.display = '';
+    document.getElementById('modalError').style.display = 'none';
+    document.getElementById('userModal').classList.add('open');
+  }
+
+  function closeUserModal() {
+    document.getElementById('userModal').classList.remove('open');
+  }
+
+  async function saveUser() {
+    const id   = document.getElementById('editUserId').value;
+    const body = {
+      fullName:      document.getElementById('mFullName').value.trim(),
+      studentNumber: document.getElementById('mStudentNumber').value.trim(),
+      email:         document.getElementById('mEmail').value.trim(),
+      password:      document.getElementById('mPassword').value,
+      roleName:      document.getElementById('mRole').value
+    };
+
+    if (!body.fullName || !body.studentNumber || !body.email) {
+      document.getElementById('modalError').textContent = 'Please fill all required fields.';
+      document.getElementById('modalError').style.display = 'flex';
+      return;
+    }
+
+    try {
+      if (id) await API.put(`/api/users/${id}`, body);
+      else    await API.post('/api/users', body);
+      closeUserModal();
+      loadUsers(userPage);
+      loadDashboard();
+    } catch(e) {
+      document.getElementById('modalError').textContent = e.message;
+      document.getElementById('modalError').style.display = 'flex';
+    }
+  }
+
+  // ── Audit Log ─────────────────────────────────────────────────────────────
+  async function loadAudit(page) {
+    auditPage = page;
+    const action = document.getElementById('auditAction').value.trim();
+    let url = `/api/audit?page=${page}&size=20`;
+    if (action) url += `&action=${encodeURIComponent(action)}`;
+
+    document.getElementById('auditBody').innerHTML = '<tr><td colspan="5" class="loader">Loading…</td></tr>';
+
+    try {
+      const data = await API.get(url);
+      const logs = data.content || [];
+      auditTotalPages = data.totalPages || 1;
+
+      document.getElementById('auditPageInfo').textContent =
+        `Showing ${data.numberOfElements || logs.length} of ${data.totalElements || logs.length} entries`;
+      document.getElementById('auditPrev').disabled = page === 0;
+      document.getElementById('auditNext').disabled = page >= auditTotalPages - 1;
+
+      document.getElementById('auditBody').innerHTML = logs.map(l => `
+        <tr>
+          <td style="white-space:nowrap;font-size:12px">${new Date(l.timestamp).toLocaleString()}</td>
+          <td>${l.user?.fullName || 'System'}</td>
+          <td><span class="badge badge-blue">${l.user?.role?.roleName || '–'}</span></td>
+          <td>${l.action}</td>
+          <td style="font-size:12px;color:var(--text-muted)">${l.ipAddress || '—'}</td>
+        </tr>`).join('');
+    } catch(e) {
+      document.getElementById('auditBody').innerHTML =
+        `<tr><td colspan="5" style="color:var(--red);padding:16px">${e.message}</td></tr>`;
+    }
+  }
+
+  function changeAuditPage(dir) {
+    const newPage = auditPage + dir;
+    if (newPage >= 0 && newPage < auditTotalPages) loadAudit(newPage);
+  }
+
+  function logout() { API.clearSession(); window.location.href = '/login.html'; }
+</script>
+</body>
+</html>
