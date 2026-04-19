@@ -1,5 +1,4 @@
 package com.nust.attendance.model;
-
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -19,14 +18,10 @@ public class Enrollment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "module_id", nullable = false)
     private Module module;
-
     private LocalDateTime enrolledAt;
-
     @PrePersist
     protected void onCreate() { enrolledAt = LocalDateTime.now(); }
-
     public Enrollment() {}
-
     public Long getEnrollmentId()          { return enrollmentId; }
     public User getStudent()               { return student; }
     public void setStudent(User v)         { student = v; }
