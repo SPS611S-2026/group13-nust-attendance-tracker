@@ -14,14 +14,17 @@ public class AuthService {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
-    public AuthService(UserRepository userRepository, JwtUtil jwtUtil, PasswordEncoder passwordEncoder) {
+    public AuthService(UserRepository userRepository, JwtUtil jwtUtil,
+                       PasswordEncoder passwordEncoder, AuditLogService auditLogService) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
     }
 
-    public LoginResponse login(LoginRequest request) {
+    public LoginResponse login(LoginRequest request, String ipAddress) {
         User user = userRepository.findByStudentNumber(request.getStudentNumber())
                 .orElseThrow(() -> new RuntimeException("Invalid student number or password."));
 
@@ -33,6 +36,8 @@ public class AuthService {
 
         String role  = user.getRole().getRoleName();
         String token = jwtUtil.generateToken(user.getStudentNumber(), role);
+
+        auditLogService.log(user, "login", ipAddress);
 
         return LoginResponse.builder()
                 .userId(user.getUserId())
