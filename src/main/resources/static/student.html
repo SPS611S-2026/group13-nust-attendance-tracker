@@ -120,7 +120,7 @@
 
   // ── Init ──────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', async () => {
-    document.getElementById('greeting').textContent = `Welcome back, ${user.fullName.split(' ')[0]} 👋`;
+    document.getElementById('greeting').textContent = `Welcome back, ${user.fullName.split(' ')[0]} `;
     document.getElementById('subheading').textContent =
       `Student No: ${user.studentNumber}  ·  ${new Date().toLocaleDateString('en-GB', {weekday:'long',year:'numeric',month:'long',day:'numeric'})}`;
 
