@@ -5,8 +5,11 @@ import com.nust.attendance.service.NotificationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/notifications")
@@ -20,8 +23,20 @@ public class NotificationController {
 
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasAnyRole('STUDENT','LECTURER','ADMIN')")
-    public ResponseEntity<List<Notification>> getNotifications(@PathVariable Long userId) {
-        return ResponseEntity.ok(notificationService.getNotificationsForUser(userId));
+    public ResponseEntity<List<Map<String, Object>>> getNotifications(@PathVariable Long userId) {
+        List<Notification> notifications = notificationService.getNotificationsForUser(userId);
+
+        List<Map<String, Object>> result = notifications.stream().map(n -> {
+            Map<String, Object> map = new HashMap<>();
+            map.put("notificationId", n.getNotificationId());
+            map.put("message", n.getMessage());
+            map.put("type", n.getType());
+            map.put("sentAt", n.getSentAt());
+            map.put("read", n.isRead());
+            return map;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(result);
     }
 
     @GetMapping("/user/{userId}/unread-count")
